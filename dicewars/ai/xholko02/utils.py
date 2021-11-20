@@ -85,3 +85,42 @@ def get_matrix_upper_triangle(matrix):
         for col in range(row + 1, N):
             triangle.append(matrix[row][col])
     return triangle
+
+
+def attack_simulation(board, attack):
+    """
+    Simulate attack on board and do changes
+
+    return board with changes
+    """
+    if attack is None:
+        return board
+
+    source, target = attack
+    source_area = board.get_area(source.get_name())
+    target_area = board.get_area(target.get_name())
+    target_area.set_owner(source.get_owner_name())
+    target_area.set_dice(source.get_dice() - 1)
+    source_area.set_dice(1)
+    return board
+
+
+def evaluate_board(board, player):
+    """
+    Evaluate board somehow
+    TODO moze byt ine ??? evaluation vynasobit s pravdepodobnostou utoku
+    """
+    # Count number of dices on all fields of player
+    dices_number = board.get_player_dice(player)
+
+    # Get size of biggest region of player
+    biggest_region_size = 0
+    player_regions = board.get_players_regions(player)
+    for region in player_regions:
+        if len(region) > biggest_region_size:
+            biggest_region_size = len(region)
+
+    # Return some evaluation of the board
+    evaluation = dices_number + biggest_region_size
+
+    return evaluation
