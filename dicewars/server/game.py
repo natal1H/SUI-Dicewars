@@ -105,7 +105,7 @@ class Game:
                     # someone won, add winning number to each row of game_states_arr = []
                     if nby:
                         for j in range(len(game_states_arr)):
-                            game_states_arr[j] = np.append(game_states_arr[j], player.get_name())
+                            game_states_arr[j] = np.append(game_states_arr[j], int(self.current_player.get_name()) - 1)
                         game_states_arr = np.array(game_states_arr)
                         # write to file
                         np.save(nby, game_states_arr)
