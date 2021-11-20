@@ -53,12 +53,14 @@ class FinalAI:
         # 6 Simuluj zasa utoky nepratelov
 
         # 7 Ohodnot C_board
+        source, target = attack
+        player_attack_poss = attack_succcess_probability(source.get_dice(), target.get_dice())
         board_simulation_evaluation = evaluate_board(board_simulation, self.player_name)
 
         # TODO mozno doplnit situaciu kedy sa nevykona ziaden utok, lebo stav by bol lepsi, ale to chce znova taku istu iteraciu bez simulacie mojho stavu
         # 8 Porovnaj ohodnotenia board a C_board
 
-        return [attack, board_simulation_evaluation]
+        return [attack, board_simulation_evaluation * player_attack_poss]
 
     def choose_best_attack(self, attacks):
         """
@@ -67,8 +69,10 @@ class FinalAI:
         # Count evaluation for every possible attack.
         evaluated_attacks = []
         for attack in attacks:
-            eval_attack = self.evaluate_attack(attack)
-            evaluated_attacks.append(eval_attack)
+            source, target = attack
+            if source.get_dice() >= target.get_dice():
+                eval_attack = self.evaluate_attack(attack)
+                evaluated_attacks.append(eval_attack)
 
         # Choose attack with best evaluation value.
         best_attack = None
@@ -78,8 +82,13 @@ class FinalAI:
                 best_attack = eval_attack[0]  # attack
                 best_attack_eval = eval_attack[1]  # evaluation value
 
-
         return best_attack
+
+    # TODO for every area in my border with enemy vybrat policko kam presuvame (min , daco, ked maju nepriatelia oproti nasemu policku vela dices) a vybereme policko
+    # TODO ktore je najmenej ohodnotene a tam presuvame. Druha heuristika je ako a z kade presuvat.
+    # TODO presuvanie bude tak ze kukame policka ktore niesu na hrane a su susedmi daneho policka a ktore ma najviac
+    # TODO dices tak z neho presuvame a toto volame iterativne (2 krat, teda hlbka 2) ze na ten co ma najviac tak ten presune dopredu.
+    # TODO heuristika dva je pocet koniec co bude na konci
 
     def ai_turn(self, board, nb_moves_this_turn, nb_transfers_this_turn, nb_turns_this_game, time_left):
         """

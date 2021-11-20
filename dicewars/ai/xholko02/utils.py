@@ -108,7 +108,7 @@ def attack_simulation(board, attack):
 def evaluate_board(board, player):
     """
     Evaluate board somehow
-    TODO moze byt ine ???
+    TODO moze byt ine ??? evaluation vynasobit s pravdepodobnostou utoku
     """
     # Count number of dices on all fields of player
     dices_number = board.get_player_dice(player)
