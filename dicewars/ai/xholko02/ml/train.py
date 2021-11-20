@@ -7,13 +7,11 @@ import numpy as np
 from torch.optim import SGD
 import matplotlib.pyplot as plt
 
-# TODO: niekde bola chyba pri vytváraní datasetu, stále dáva iba rovnakého víťaza (4)
-# skontrolovať tak, že spojiť všetky súbory do jedného veľkého a v ňom spočítať výskyty jednotlivých víťazov
-
-BATCH_SIZE = 32
+BATCH_SIZE = 64
 EPOCHS = 25
 VAL_SPLIT = 0.2
-DATASET_LOC = "./dataset2507/00242.npy"
+DATASET_LOC = "./dataset_compiled.npy"
+SAVE_PATH = "model1.pt"
 
 
 def relu(x):
@@ -92,6 +90,7 @@ def run_gradient_descent(model, batch_size=32, learning_rate=0.01, weight_decay=
     # training
     n = 0  # the number of iterations
     for epoch in range(num_epochs):
+        print("Epoch %d: " % epoch, end="")
         for xs, ts in iter(train_loader):
             if len(ts) != batch_size:
                 continue
@@ -128,6 +127,9 @@ def run_gradient_descent(model, batch_size=32, learning_rate=0.01, weight_decay=
 
             # increment the iteration number
             n += 1
+        print("done")
+        print("\tLast loss: %f " % losses[-1])
+        print("\tLast accuracy: %4f (train), %4f (val)" % (train_acc[-1], val_acc[-1]))
 
     # plotting
     plt.title("Training Curve (batch_size={}, lr={})".format(batch_size, learning_rate))
@@ -159,4 +161,5 @@ def get_accuracy(model, loader):
 
 if __name__ == "__main__":
     model = Network()
-    run_gradient_descent(model, batch_size=BATCH_SIZE, learning_rate=0.01, num_epochs=EPOCHS)
+    model = run_gradient_descent(model, batch_size=BATCH_SIZE, learning_rate=0.01, num_epochs=EPOCHS)
+    torch.save(model.state_dict(), SAVE_PATH)  # save model
