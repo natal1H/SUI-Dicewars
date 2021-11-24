@@ -23,16 +23,9 @@ class FinalAI:
         self.max_transfers = max_transfers
 
     def evaluate_attack(self, attack):
-        # 1 Ohodnot board
-        current_board_evaluation = evaluate_board(self.board, self.player_name)
-
-        # 2 Urob kopiu boardu C_board
         board_simulation = copy.deepcopy(self.board)
-
-        # 3 Simuluj moj attack na C_board
         board_simulation = attack_simulation(board_simulation, attack)
 
-        # 4 Pre kadzdeho enemy simuluj ich najlepsi utok
         for enemy in self.player_order:
             if enemy != self.player_name:
                 enemy_attacks = list(possible_attacks(board_simulation, enemy))
@@ -48,17 +41,9 @@ class FinalAI:
 
                     board_simulation = attack_simulation(board_simulation, best_enemy_attack)
 
-        # TODO 5 a 6 to by bolo do hlbky 3 ale je to dobry napad ?, bolo by to len dve iteracie ako hore
-        # 5 Simuluj zasa moj utok z novej mnoziny
-        # 6 Simuluj zasa utoky nepratelov
-
-        # 7 Ohodnot C_board
         source, target = attack
         player_attack_poss = attack_succcess_probability(source.get_dice(), target.get_dice())
         board_simulation_evaluation = evaluate_board(board_simulation, self.player_name)
-
-        # TODO mozno doplnit situaciu kedy sa nevykona ziaden utok, lebo stav by bol lepsi, ale to chce znova taku istu iteraciu bez simulacie mojho stavu
-        # 8 Porovnaj ohodnotenia board a C_board
 
         return [attack, board_simulation_evaluation * player_attack_poss]
 
@@ -84,21 +69,62 @@ class FinalAI:
 
         return best_attack
 
-    # TODO for every area in my border with enemy vybrat policko kam presuvame (min , daco, ked maju nepriatelia oproti nasemu policku vela dices) a vybereme policko
+    # for every area in my border with enemy vybrat policko kam presuvame (min , daco, ked maju nepriatelia oproti nasemu policku vela dices) a vybereme policko
     # TODO ktore je najmenej ohodnotene a tam presuvame. Druha heuristika je ako a z kade presuvat.
     # TODO presuvanie bude tak ze kukame policka ktore niesu na hrane a su susedmi daneho policka a ktore ma najviac
     # TODO dices tak z neho presuvame a toto volame iterativne (2 krat, teda hlbka 2) ze na ten co ma najviac tak ten presune dopredu.
-    # TODO heuristika dva je pocet koniec co bude na konci
+    def move_dices(self, board, player, nb_transfers_this_turn):
+        # Choose weakest area --------------------------------------------------------------
+        weak_area = None
+        player_border = board.get_player_border(player)
+        for border_area in player_border:
+            if weak_area is None:
+                weak_area = border_area
+            else:
+                if weak_area.get_dice() > border_area.get_dice():
+                    weak_area = border_area
+
+        # Choose mover ---------------------------------------------------------------------
+        mover = None
+        weak_area_neighbours = weak_area.get_adjacent_areas_names()
+        for name in weak_area_neighbours:
+            area = board.get_area(name)
+            if area.get_owner_name() == player and area not in player_border:
+                if mover is None:
+                    mover = area
+                else:
+                    if mover.get_dice() < area.get_dice():
+                        mover = area
+
+        # Move dices from mover to weak_area ---------------------------------------------- DONE
+        if weak_area is not None and mover is not None:
+            if weak_area.get_dice() != 8 and mover.get_dice() != 1:
+                if weak_area.get_dice() == 1:
+                    weak_area.set_dice(mover.get_dice())
+                    mover.set_dice(1)
+                else:
+                    need = 8 - weak_area.get_dice()
+                    if mover.get_dice() > need:
+                        weak_area.set_dice(8)
+                        mover.set_dice(mover.get_dice() - need)
+                    else:
+                        weak_area.set_dice(weak_area.get_dice() + mover.get_dice() - 1)
+                        mover.set_dice(1)
+
+                nb_transfers_this_turn += 1
 
     def ai_turn(self, board, nb_moves_this_turn, nb_transfers_this_turn, nb_turns_this_game, time_left):
         """
         Agent turn. Choose best possible attack or does nothing.
         """
-
         attacks = list(possible_attacks(board, self.player_name))
+        if nb_transfers_this_turn < 3:
+            self.move_dices(board, self.player_name, nb_transfers_this_turn)
         best_attack = self.choose_best_attack(attacks)
 
         if best_attack:
+            if nb_transfers_this_turn < 6:
+                self.move_dices(board, self.player_name, nb_transfers_this_turn)
             source, target = best_attack
             return BattleCommand(source.get_name(), target.get_name())
         else:
