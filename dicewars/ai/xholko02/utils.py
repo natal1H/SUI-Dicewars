@@ -120,7 +120,8 @@ def evaluate_board_NN(model, serializer, board, player):
     board_state = serializer.serialize_board_state(board)
     with torch.no_grad():
         probabilities = model(board_state[None, ...])  # Has to be this way for some reason
-    evaluation = get_player_win_prob(probabilities, player)
+        probabilities_normalized = torch.softmax(probabilities, dim=1)
+    evaluation = get_player_win_prob(probabilities_normalized, player)
     return evaluation
 
 
