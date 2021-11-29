@@ -66,28 +66,18 @@ def log_file_producer(logdir, process):
 def run_ai_only_game(
         port, address, process_list, ais,
         board_definition=None, fixed=None, client_seed=None,
-        logdir=None, debug=False, nby=""):
+        logdir=None, debug=False):
     logs = []
     process_list.clear()
 
     ai_nicks = [get_nickname(ai) for ai in ais]
 
-    if not nby:
-        server_cmd = [
-            "./scripts/server.py",
-            "-n", str(len(ais)),
-            "-p", str(port),
-            "-a", str(address),
-        ]
-    else:
-        server_cmd = [
-            "./scripts/server.py",
-            "-n", str(len(ais)),
-            "-p", str(port),
-            "-a", str(address),
-            "--nby", nby,
-        ]
-
+    server_cmd = [
+        "./scripts/server.py",
+        "-n", str(len(ais)),
+        "-p", str(port),
+        "-a", str(address),
+    ]
     server_cmd.append('-r')
     server_cmd.extend(ai_nicks)
     if board_definition is not None:

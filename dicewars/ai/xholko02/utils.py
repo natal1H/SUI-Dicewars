@@ -2,8 +2,11 @@
 # TODO check length of game state np array if it has correct length (len_triangle + (N_areas * 2) + N_players)
 
 import numpy as np
+import torch
+
 from dicewars.client.game.board import Board
 from ..utils import probability_of_holding_area
+from dicewars.ai.xholko02.ml.nn import *
 
 
 class Serializer:
@@ -26,8 +29,7 @@ class Serializer:
         biggest_regions = self.get_array_of_biggest_regions(board)
         # concatenate arrays into one
         game_state = np.concatenate((self.neighbours_triangle, areas_info, biggest_regions), dtype=int)
-
-        return game_state
+        return torch.from_numpy(game_state).type(torch.float32)
 
     def get_neighbours_matrix(self, board: Board):
         # TODO refactor
@@ -107,12 +109,28 @@ def attack_simulation(board, attack):
     return board
 
 
+def get_player_win_prob(probs, player):
+    """
+    Get probabylity for player [1/2/3/4] winning
+    """
+    return probs.numpy()[0][player - 1]
+
+
+def evaluate_board_NN(model, serializer, board, player):
+    board_state = serializer.serialize_board_state(board)
+    with torch.no_grad():
+        probabilities = model(board_state[None, ...])  # Has to be this way for some reason
+    evaluation = get_player_win_prob(probabilities, player)
+    return evaluation
+
+
 def evaluate_board(board, player):
     """
     Evaluate board somehow
     TODO Machine-learning
     TODO tuto sa da volat NN tiez a je tu na vstupe player aj board cize data + label
     """
+
     # Count number of dices on all fields of player
     dices_number = board.get_player_dice(player)
 

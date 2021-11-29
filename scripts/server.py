@@ -145,7 +145,6 @@ def main():
     parser.add_argument('-f', '--fixed', help="Random seed to be used for player order and dice rolls", type=int)
     parser.add_argument('-r', '--order', nargs='+',
                         help="Random seed to be used for dice assignment")
-    parser.add_argument('--nby', help=".nby save file name")
     args = parser.parse_args()
 
     config = configparser.ConfigParser()
@@ -170,7 +169,7 @@ def main():
 
     random.seed(args.fixed)
     game = Game(board, area_ownership, args.number_of_players, game_config, args.address, args.port, args.order)
-    game.run(args.nby)
+    game.run()
 
 
 if __name__ == '__main__':

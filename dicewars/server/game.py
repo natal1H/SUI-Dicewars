@@ -10,8 +10,6 @@ from .player import Player
 
 from .summary import GameSummary
 
-from dicewars.ai.xholko02.server_serializer import ServerSerializer
-
 
 class Game:
     """Instance of the game
@@ -80,36 +78,18 @@ class Game:
 
         self.summary = GameSummary()
 
-    def run(self, nby=""):
+    def run(self):
         """Main loop of the game
         """
-
-        serializer = ServerSerializer(self.board, self.number_of_players) # temporary
-        game_states_arr = []
-
         try:
             for i in range(1, self.number_of_players + 1):
                 player = self.players[i]
                 self.send_message(player, 'game_state')
             while True:
                 self.logger.debug("Current player {}".format(self.current_player.get_name()))
-
-                # get game state
-                board_state = serializer.serialize_board_state(self.board)
-                game_states_arr.append(board_state)
-
                 self.handle_player_turn()
                 if self.check_win_condition():
                     sys.stdout.write(str(self.summary))
-
-                    # someone won, add winning number to each row of game_states_arr = []
-                    if nby:
-                        for j in range(len(game_states_arr)):
-                            game_states_arr[j] = np.append(game_states_arr[j], int(self.current_player.get_name()) - 1)
-                        game_states_arr = np.array(game_states_arr)
-                        # write to file
-                        np.save(nby, game_states_arr)
-
                     break
 
         except KeyboardInterrupt:

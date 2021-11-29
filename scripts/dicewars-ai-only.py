@@ -20,7 +20,6 @@ parser.add_argument('-l', '--logdir', help="Folder to store last running logs in
 parser.add_argument('-d', '--debug', action='store_true')
 parser.add_argument('--ai', help="Specify AI versions as a sequence of ints.", nargs='+')
 parser.add_argument('-r', '--report', help="State the game number on the stdout", action='store_true')
-parser.add_argument('--nby', help="Name of nby file where to store game states")
 
 procs = []
 
@@ -58,7 +57,6 @@ def main():
         try:
             board_seed = None if args.board is None else args.board + i
             board_definition = BoardDefinition(board_seed, args.ownership, args.strength)
-            nby = "" if not args.nby else args.nby + "_" + str(i)  # name for potential save .nby file
             game_summary = run_ai_only_game(
                 args.port, args.address, procs, args.ai,
                 board_definition,
@@ -66,7 +64,6 @@ def main():
                 client_seed=args.client_seed,
                 logdir=args.logdir,
                 debug=args.debug,
-                nby=nby
             )
             summaries.append(game_summary)
         except KeyboardInterrupt:
