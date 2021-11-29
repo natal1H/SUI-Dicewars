@@ -1,13 +1,9 @@
 import copy
 import logging
-from dicewars.ai.utils import attack_succcess_probability
-from dicewars.ai.utils import possible_attacks
+from dicewars.ai.utils import attack_succcess_probability, possible_attacks
 from dicewars.client.ai_driver import BattleCommand, EndTurnCommand, TransferCommand
-from dicewars.ai.xholko02.utils import evaluate_board
-from dicewars.ai.xholko02.utils import attack_simulation
-from dicewars.ai.xholko02.utils import get_transfer_to_border
-from dicewars.ai.xholko02.utils import get_transfer_from_endangered
-
+from dicewars.ai.xholko02.utils import *
+from dicewars.ai.xholko02.ml.nn import *
 
 # SPUSTENIE python3 ./scripts/dicewars-human.py --ai dt.sdc dt.rand xholko02
 # SPUSTENIE LEN NASE AI python3 ./scripts/dicewars-human.py --ai xholko02 xholko02 xholko02
@@ -19,12 +15,21 @@ class FinalAI:
     """
 
     def __init__(self, player_name, board, players_order, max_transfers):
+        # Load trained neural network
+        self.model = Network()
+        self.model.load_state_dict(torch.load("./dicewars/ai/xholko02/ml/models/model.pt"))
+        self.model.eval()  # Necessary when trying to predict new data
+        # Initialize serializer necessary for NN
+        self.serializer = Serializer(board, len(players_order))
+
         self.board = board
         self.player_name = player_name
         self.logger = logging.getLogger('AI')
         self.player_order = players_order
         self.max_transfers = max_transfers
         self.stage = 'attack'
+
+        self.useNN = len(self.player_order) == 4  # Use neural net? Only if 4 players present
 
     def evaluate_attack(self, attack):
         """ Depth one search with evaluation of board.
@@ -57,7 +62,8 @@ class FinalAI:
         source, target = attack
         player_attack_poss = attack_succcess_probability(source.get_dice(), target.get_dice())
         #TODO Ohodnotenie do NN pojde board simulation a asi serializovane
-        board_simulation_evaluation = evaluate_board(board_simulation, self.player_name)
+        board_simulation_evaluation = evaluate_board_NN(self.model, self.serializer, board_simulation, self.player_name) \
+            if self.useNN else evaluate_board(board_simulation, self.player_name)
         #TODO a vrati to [attack, a to ohodnotenie teoretiky tu pravdepodobnost]
         #TODO neviem ci vrati tu pravdepodobnost alebo co lebo sa vybera ten utok co ma najvecsiu hodnotu ohodnotenia
         #TODO a moze sa NN volat aj vo funkcii v UTILS tam je TODO kde
