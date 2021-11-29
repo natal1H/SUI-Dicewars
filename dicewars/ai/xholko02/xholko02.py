@@ -1,18 +1,21 @@
 import copy
 import logging
-
 from dicewars.ai.utils import attack_succcess_probability
 from dicewars.ai.utils import possible_attacks
-from dicewars.client.ai_driver import BattleCommand, EndTurnCommand
+from dicewars.client.ai_driver import BattleCommand, EndTurnCommand, TransferCommand
 from dicewars.ai.xholko02.utils import evaluate_board
 from dicewars.ai.xholko02.utils import attack_simulation
+from dicewars.ai.xholko02.utils import get_transfer_to_border
+from dicewars.ai.xholko02.utils import get_transfer_from_endangered
 
 
 # SPUSTENIE python3 ./scripts/dicewars-human.py --ai dt.sdc dt.rand xholko02
 # SPUSTENIE LEN NASE AI python3 ./scripts/dicewars-human.py --ai xholko02 xholko02 xholko02
 class FinalAI:
-    """
-    ExpectiMiniMax player agent
+    """ Agent using depth one search strategy with machine-learning evaluation
+    of whole board depending on the player.
+    Transfers of dices are made from border to front before attacks and defending transfers from weakest areas
+    before ending turn.
     """
 
     def __init__(self, player_name, board, players_order, max_transfers):
@@ -21,35 +24,52 @@ class FinalAI:
         self.logger = logging.getLogger('AI')
         self.player_order = players_order
         self.max_transfers = max_transfers
+        self.stage = 'attack'
 
     def evaluate_attack(self, attack):
+        """ Depth one search with evaluation of board.
+
+        Simulate current player turn and than simulate single enemy attack
+        using Strength Difference Checking (SDC) strategy. After whole cycle of player and enemies evaluate board
+        score with neural-network depending on current player.
+
+        Return:
+            [attack, evaluation] -> pair attack and evaluation score
+        """
         board_simulation = copy.deepcopy(self.board)
         board_simulation = attack_simulation(board_simulation, attack)
 
         for enemy in self.player_order:
             if enemy != self.player_name:
-                enemy_attacks = list(possible_attacks(board_simulation, enemy))
-                if enemy_attacks:
-                    best_enemy_attack = None
-                    best_enemy_attack_possibility = 0
-                    for enemy_attack in enemy_attacks:
-                        source, target = enemy_attack
-                        attack_probability = attack_succcess_probability(source.get_dice(), target.get_dice())
-                        if attack_probability > best_enemy_attack_possibility:
-                            best_enemy_attack = enemy_attack
-                            best_enemy_attack_possibility = attack_probability
+                enemy_attacks = []
+                enemy_possible_attacks = list(possible_attacks(board_simulation, enemy))
+                for en_attack in enemy_possible_attacks:
+                    source, target = en_attack
+                    area_dice = source.get_dice()
+                    strength_difference = area_dice - target.get_dice()
+                    enemy_attack = [en_attack, strength_difference]
+                    enemy_attacks.append(enemy_attack)
 
-                    board_simulation = attack_simulation(board_simulation, best_enemy_attack)
+                enemy_attacks = sorted(enemy_attacks, key=lambda enemy_attack: enemy_attack[1], reverse=True)
+                if enemy_attacks and enemy_attacks[0][1] >= 0:
+                    board_simulation = attack_simulation(board_simulation, enemy_attacks[0][0])
 
         source, target = attack
         player_attack_poss = attack_succcess_probability(source.get_dice(), target.get_dice())
+        #TODO Ohodnotenie do NN pojde board simulation a asi serializovane
         board_simulation_evaluation = evaluate_board(board_simulation, self.player_name)
-
+        #TODO a vrati to [attack, a to ohodnotenie teoretiky tu pravdepodobnost]
+        #TODO neviem ci vrati tu pravdepodobnost alebo co lebo sa vybera ten utok co ma najvecsiu hodnotu ohodnotenia
+        #TODO a moze sa NN volat aj vo funkcii v UTILS tam je TODO kde
         return [attack, board_simulation_evaluation * player_attack_poss]
 
     def choose_best_attack(self, attacks):
-        """
-        From all possible attacks choose one with best evaluation of final state of board.
+        """Choosing best attack.
+
+        Evaluate every possible attack and return one with highest evaluation score.
+
+        Return:
+            best_attack -> attack with highest evaluation score
         """
         # Count evaluation for every possible attack.
         evaluated_attacks = []
@@ -69,63 +89,37 @@ class FinalAI:
 
         return best_attack
 
-    # for every area in my border with enemy vybrat policko kam presuvame (min , daco, ked maju nepriatelia oproti nasemu policku vela dices) a vybereme policko
-    # TODO ktore je najmenej ohodnotene a tam presuvame. Druha heuristika je ako a z kade presuvat.
-    # TODO presuvanie bude tak ze kukame policka ktore niesu na hrane a su susedmi daneho policka a ktore ma najviac
-    # TODO dices tak z neho presuvame a toto volame iterativne (2 krat, teda hlbka 2) ze na ten co ma najviac tak ten presune dopredu.
-    def move_dices(self, board, player, nb_transfers_this_turn):
-        # Choose weakest area --------------------------------------------------------------
-        weak_area = None
-        player_border = board.get_player_border(player)
-        for border_area in player_border:
-            if weak_area is None:
-                weak_area = border_area
-            else:
-                if weak_area.get_dice() > border_area.get_dice():
-                    weak_area = border_area
-
-        # Choose mover ---------------------------------------------------------------------
-        mover = None
-        weak_area_neighbours = weak_area.get_adjacent_areas_names()
-        for name in weak_area_neighbours:
-            area = board.get_area(name)
-            if area.get_owner_name() == player and area not in player_border:
-                if mover is None:
-                    mover = area
-                else:
-                    if mover.get_dice() < area.get_dice():
-                        mover = area
-
-        # Move dices from mover to weak_area ---------------------------------------------- DONE
-        if weak_area is not None and mover is not None:
-            if weak_area.get_dice() != 8 and mover.get_dice() != 1:
-                if weak_area.get_dice() == 1:
-                    weak_area.set_dice(mover.get_dice())
-                    mover.set_dice(1)
-                else:
-                    need = 8 - weak_area.get_dice()
-                    if mover.get_dice() > need:
-                        weak_area.set_dice(8)
-                        mover.set_dice(mover.get_dice() - need)
-                    else:
-                        weak_area.set_dice(weak_area.get_dice() + mover.get_dice() - 1)
-                        mover.set_dice(1)
-
-                nb_transfers_this_turn += 1
-
     def ai_turn(self, board, nb_moves_this_turn, nb_transfers_this_turn, nb_turns_this_game, time_left):
+        """ AI agent's turn
+        Gets all possible attack and choose one, which leads to most optimal outcome.
+        Transfers are made before attacks and before ending turn.
         """
-        Agent turn. Choose best possible attack or does nothing.
-        """
-        attacks = list(possible_attacks(board, self.player_name))
-        if nb_transfers_this_turn < 3:
-            self.move_dices(board, self.player_name, nb_transfers_this_turn)
-        best_attack = self.choose_best_attack(attacks)
 
-        if best_attack:
-            if nb_transfers_this_turn < 6:
-                self.move_dices(board, self.player_name, nb_transfers_this_turn)
-            source, target = best_attack
-            return BattleCommand(source.get_name(), target.get_name())
-        else:
-            return EndTurnCommand()
+        # Move dices in front
+        while nb_transfers_this_turn < (self.max_transfers - round(self.max_transfers / 4)):
+            transfer = get_transfer_to_border(board, self.player_name)
+            if transfer:
+                return TransferCommand(transfer[0], transfer[1])
+            else:
+                break
+
+        # Attack
+        if self.stage == "attack":
+            attacks = list(possible_attacks(board, self.player_name))
+            best_attack = self.choose_best_attack(attacks)
+            if best_attack:
+                source, target = best_attack
+                return BattleCommand(source.get_name(), target.get_name())
+            else:
+                self.stage = "evacuation"
+
+        # Evacuation
+        if self.stage == 'evacuation':
+            if nb_transfers_this_turn < self.max_transfers:
+                transfer = get_transfer_from_endangered(board, self.player_name)
+                if transfer:
+                    return TransferCommand(transfer[0], transfer[1])
+
+        # End turn
+        self.stage = 'attack'
+        return EndTurnCommand()
