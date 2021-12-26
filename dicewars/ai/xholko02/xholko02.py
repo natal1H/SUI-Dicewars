@@ -2,11 +2,12 @@ import copy
 import logging
 from dicewars.ai.utils import attack_succcess_probability, possible_attacks
 from dicewars.client.ai_driver import BattleCommand, EndTurnCommand, TransferCommand
+from dicewars.ai.xholko02.ml import *
 from dicewars.ai.xholko02.utils import *
-from dicewars.ai.xholko02.ml.nn import *
 
-# SPUSTENIE python3 ./scripts/dicewars-human.py --ai dt.sdc dt.rand xholko02
-# SPUSTENIE LEN NASE AI python3 ./scripts/dicewars-human.py --ai xholko02 xholko02 xholko02
+# TODO - comment with authors
+# TODO - comments
+
 class FinalAI:
     """ Agent using depth one search strategy with machine-learning evaluation
     of whole board depending on the player.
@@ -17,7 +18,7 @@ class FinalAI:
     def __init__(self, player_name, board, players_order, max_transfers):
         # Load trained neural network
         self.model = Network()
-        self.model.load_state_dict(torch.load("./dicewars/ai/xholko02/ml/models/model.pt"))
+        self.model.load_state_dict(torch.load("./dicewars/ai/xholko02/model.pt"))
         self.model.eval()  # Necessary when trying to predict new data
         # Initialize serializer necessary for NN
         self.serializer = Serializer(board, len(players_order))
