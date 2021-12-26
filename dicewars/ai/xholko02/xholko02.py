@@ -5,8 +5,13 @@ from dicewars.client.ai_driver import BattleCommand, EndTurnCommand, TransferCom
 from dicewars.ai.xholko02.ml import *
 from dicewars.ai.xholko02.utils import *
 
-# TODO - comment with authors
-# TODO - comments
+"""
+Authors:
+Filip Bali, xbalif00
+Natalia Holkova, xholko02
+Roland Zitny, xzitny01
+Vit Bartak, xbarta47
+"""
 
 class FinalAI:
     """ Agent using depth one search strategy with machine-learning evaluation
@@ -62,12 +67,9 @@ class FinalAI:
 
         source, target = attack
         player_attack_poss = attack_succcess_probability(source.get_dice(), target.get_dice())
-        #TODO Ohodnotenie do NN pojde board simulation a asi serializovane
         board_simulation_evaluation = evaluate_board_NN(self.model, self.serializer, board_simulation, self.player_name) \
             if self.useNN else evaluate_board(board_simulation, self.player_name)
-        #TODO a vrati to [attack, a to ohodnotenie teoretiky tu pravdepodobnost]
-        #TODO neviem ci vrati tu pravdepodobnost alebo co lebo sa vybera ten utok co ma najvecsiu hodnotu ohodnotenia
-        #TODO a moze sa NN volat aj vo funkcii v UTILS tam je TODO kde
+
         return [attack, board_simulation_evaluation * player_attack_poss]
 
     def choose_best_attack(self, attacks):

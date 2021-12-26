@@ -1,7 +1,12 @@
 from ..utils import probability_of_holding_area
 
-# TODO - add comment with authors
-# TODO - comments
+"""
+Authors:
+Filip Bali, xbalif00
+Natalia Holkova, xholko02
+Roland Zitny, xzitny01
+Vit Bartak, xbarta47
+"""
 
 def attack_simulation(board, attack):
     """
@@ -24,9 +29,7 @@ def attack_simulation(board, attack):
 
 def evaluate_board(board, player):
     """
-    Evaluate board somehow
-    TODO Machine-learning
-    TODO tuto sa da volat NN tiez a je tu na vstupe player aj board cize data + label
+    Evaluate board without machine learning
     """
 
     # Count number of dices on all fields of player
@@ -47,7 +50,7 @@ def evaluate_board(board, player):
 
 def get_transfer_to_border(board, player_name):
     """
-    TODO NEviem ci to ponechat a len odzdrojovat alebo to treba prpisat nejako
+    Transfers from other AI
     """
     border_names = [a.name for a in board.get_player_border(player_name)]
     all_areas = board.get_player_areas(player_name)
@@ -66,7 +69,7 @@ def get_transfer_to_border(board, player_name):
 
 def areas_expected_loss(board, player_name, areas):
     """
-    TODO NEviem ci to ponechat a len odzdrojovat alebo to treba prpisat nejako
+    Transfers from other AI
     """
     hold_ps = [probability_of_holding_area(board, a.get_name(), a.get_dice(), player_name) for a in areas]
     return sum((1-p) * a.get_dice() for p, a in zip(hold_ps, areas))
@@ -74,7 +77,7 @@ def areas_expected_loss(board, player_name, areas):
 
 def get_transfer_from_endangered(board, player_name):
     """
-    TODO NEviem ci to ponechat a len odzdrojovat alebo to treba prpisat nejako
+    Transfers from other AI
     """
     border_names = [a.name for a in board.get_player_border(player_name)]
     all_areas_names = [a.name for a in board.get_player_areas(player_name)]
