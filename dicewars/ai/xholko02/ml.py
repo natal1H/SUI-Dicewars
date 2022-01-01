@@ -4,8 +4,13 @@ import torch.nn.functional as F
 import numpy as np
 from dicewars.client.game.board import Board
 
-# TODO - add comment with authors
-# TODO - comments, comments, COMMENTS!
+"""
+Authors:
+Filip Bali, xbalif00
+Natalia Holkova, xholko02
+Roland Zitny, xzitny01
+Vit Bartak, xbarta47
+"""
 
 def relu(x):
     return x * F.relu(x)
@@ -32,6 +37,7 @@ class Network(nn.Module):
 
         return x
 
+
 class Serializer:
     numAreas = 34  # Number of areas on board (names from 1 to 34 (including)
 
@@ -44,9 +50,6 @@ class Serializer:
         self.neighbours_triangle = get_matrix_upper_triangle(neighbours_matrix)
 
     def serialize_board_state(self, board: Board):
-        """
-        TODO refactor
-        """
         # each round we need new info about areas and biggest regions
         areas_info = self.get_array_of_area_info(board)
         biggest_regions = self.get_array_of_biggest_regions(board)
@@ -55,7 +58,6 @@ class Serializer:
         return torch.from_numpy(game_state).type(torch.float32)
 
     def get_neighbours_matrix(self, board: Board):
-        # TODO refactor
         matrix = []
 
         for i in range(1, self.numAreas + 1):
@@ -71,7 +73,6 @@ class Serializer:
         return matrix
 
     def get_array_of_area_info(self, board: Board):
-        # TODO refactor
         areas_info = []
         for i in range(1, self.numAreas + 1):
             area = board.get_area(i)
@@ -82,7 +83,6 @@ class Serializer:
         return areas_info
 
     def get_array_of_biggest_regions(self, board: Board):
-        # TODO refactor
         biggest_regions = []
         for i in range(1, self.numPlayers + 1):
             player_regions = board.get_players_regions(i)

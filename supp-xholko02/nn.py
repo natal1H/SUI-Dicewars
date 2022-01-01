@@ -6,19 +6,24 @@ import torch.nn.functional as F
 import numpy as np
 from torch.optim import SGD
 import matplotlib.pyplot as plt
+import os
+import zipfile
 
-# TODO - NOT REFACTORED YET!
-# TODO - add first unzipping the dataset
-# TODO - add argument parser
-# TODO - add comment with authors
+"""
+Authors:
+Filip Bali, xbalif00
+Natalia Holkova, xholko02
+Roland Zitny, xzitny01
+Vit Bartak, xbarta47
+"""
 
 BATCH_SIZE = 64
-EPOCHS = 5
+EPOCHS = 1
 VAL_SPLIT = 0.2
-DATASET_ZIP = "dicewars/supp-xholko02/dataset.zip"
-DATASET_LOC = "dicewars/supp-xholko02/dataset.npy"
-SAVE_PATH = "dicewars/ai/xholko02/model.pt"
-
+DATASET_ZIP = "supp-xholko02/dataset_sample.zip"
+DATASET_DIR = "supp-xholko02/"
+DATASET_LOC = "supp-xholko02/dataset_sample.npy"
+SAVE_PATH = "supp-xholko02/model_test.pt"
 
 def relu(x):
     return x * F.relu(x)
@@ -165,6 +170,11 @@ def get_accuracy(model, loader):
 
 
 if __name__ == "__main__":
+    # Unzip training dataset if not already
+    if not os.path.isfile(DATASET_LOC):
+        with zipfile.ZipFile(DATASET_ZIP, 'r') as zip_ref:
+            zip_ref.extractall(DATASET_DIR)
+
     model = Network()
     model = run_gradient_descent(model, batch_size=BATCH_SIZE, learning_rate=0.01, num_epochs=EPOCHS)
     torch.save(model.state_dict(), SAVE_PATH)  # save model
